@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Sparkles } from "lucide-react";
 import Sidebar from "./Sidebar";
 import { ReactNode } from "react";
+import { useSession } from "@/lib/auth-client";
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Overview",
@@ -17,6 +19,14 @@ const routeTitles: Record<string, string> = {
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, isPending } = useSession();
+
+  useEffect(() => {
+    if (!isPending && !session) router.replace("/auth/signin");
+  }, [isPending, router, session]);
+
+  if (isPending || !session) return null;
 
   return (
     <div className="app-shell">
