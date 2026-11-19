@@ -1,55 +1,98 @@
 "use client";
 
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ReceiptText, Search } from "lucide-react";
+import RecordToolbar from "@/components/records/RecordToolbar";
+import RecordsPanel from "@/components/records/RecordsPanel";
+import EmptyState from "@/components/records/EmptyState";
+import { usePreferences } from "@/components/PreferencesProvider";
+import { useRecordFilter } from "@/lib/hooks/useRecordFilter";
+import type { Spend } from "@/lib/types/records";
+import { ReceiptText } from "lucide-react";
 
 export default function SpendsPage() {
-  const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All categories");
-  const spends = [
-    { title: "Cloud infrastructure", category: "Hosting", amount: "$420.00", date: "Nov 12, 2026" },
-    { title: "Development tools", category: "Software", amount: "$45.00", date: "Nov 10, 2026" },
-    { title: "Deployment plan", category: "Hosting", amount: "$40.00", date: "Nov 01, 2026" },
-    { title: "Workspace and domain", category: "Subscriptions", amount: "$24.00", date: "Nov 01, 2026" },
-    { title: "AI service credits", category: "Software", amount: "$150.00", date: "Oct 28, 2026" },
-  ];
-  const filteredSpends = spends.filter((spend) => {
-    const matchesQuery = `${spend.title} ${spend.category}`.toLowerCase().includes(query.toLowerCase());
-    const matchesCategory = categoryFilter === "All categories" || spend.category === categoryFilter;
-    return matchesQuery && matchesCategory;
+  const { t } = usePreferences();
+  const spends: Spend[] = [];
+
+  const { query, setQuery, filter, setFilter, filteredData: filteredSpends } = useRecordFilter({
+    data: spends,
+    searchFields: (spend) => `${spend.title} ${spend.category}`,
+    filterField: (spend) => spend.category,
+    filterValue: "All categories",
   });
 
   return (
     <DashboardLayout>
       <div className="workspace-page">
-        <div className="page-heading"><div><p className="page-eyebrow">MONEY OUT</p><h1>Spending</h1><p>See where your operating costs are going.</p></div></div>
-        <section className="finance-summary spend-summary" aria-label="Spending summary">
-          <div className="finance-summary-main"><span className="page-eyebrow">SPENT THIS MONTH</span><strong>$679</strong><span className="finance-trend spend-trend">Across 4 categories</span></div>
-          <div className="finance-summary-stat"><span>Largest category</span><strong>Hosting</strong><small>$460 this month</small></div>
-          <div className="finance-summary-stat"><span>Monthly budget</span><strong>$2,500</strong><small>$1,821 remaining</small></div>
-        </section>
-        <div className="records-toolbar">
-          <label className="search-control"><Search size={16} /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search expenses" aria-label="Search expenses" /></label>
-          <select className="filter-select" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="Filter expenses by category">
-            <option>All categories</option><option>Hosting</option><option>Software</option><option>Subscriptions</option>
-          </select>
-          <span className="record-count">{filteredSpends.length} expenses</span>
+        <div className="page-heading">
+          <div>
+            <p className="page-eyebrow">{t("MONEY OUT")}</p>
+            <h1>{t("Spending")}</h1>
+            <p>{t("See where your operating costs are going.")}</p>
+          </div>
         </div>
-        <section className="records-panel" aria-label="Expense ledger">
-          <div className="records-columns spend-columns"><span>EXPENSE</span><span>CATEGORY</span><span>DATE</span><span>AMOUNT</span></div>
+
+        <section className="finance-summary spend-summary" aria-label={t("Spending summary")}>
+          <div className="finance-summary-main">
+            <span className="page-eyebrow">{t("SPENT THIS MONTH")}</span>
+            <strong>$0</strong>
+            <span className="finance-trend spend-trend">{t("No expenses recorded")}</span>
+          </div>
+          <div className="finance-summary-stat">
+            <span>{t("Largest category")}</span>
+            <strong>{t("None")}</strong>
+            <small>{t("$0 this month")}</small>
+          </div>
+          <div className="finance-summary-stat">
+            <span>{t("Monthly budget")}</span>
+            <strong>$2,500</strong>
+            <small>{t("$2,500 remaining")}</small>
+          </div>
+        </section>
+
+        <RecordToolbar
+          query={query}
+          onQueryChange={setQuery}
+          filterValue={filter}
+          onFilterChange={setFilter}
+          filterOptions={[
+            { value: "All categories", label: t("All categories") },
+            { value: "Hosting", label: t("Hosting") },
+            { value: "Software", label: t("Software") },
+            { value: "Subscriptions", label: t("Subscriptions") },
+          ]}
+          recordCount={filteredSpends.length}
+          recordType="expenses"
+          searchPlaceholder={t("Search expenses")}
+          filterLabel={t("Filter expenses by category")}
+        />
+
+        <RecordsPanel
+          columns={[
+            { key: "expense", label: t("EXPENSE") },
+            { key: "category", label: t("CATEGORY") },
+            { key: "date", label: t("DATE") },
+            { key: "amount", label: t("AMOUNT") },
+          ]}
+          columnClassName="spend-columns"
+          ariaLabel="Expense ledger"
+        >
           {filteredSpends.map((spend) => (
             <article className="record-row spend-row" key={spend.title}>
               <span className="finance-row-icon spend-icon"><ReceiptText size={16} /></span>
-              <span className="finance-description"><strong>{spend.title}</strong><small>Business expense</small></span>
+              <span className="finance-description">
+                <strong>{spend.title}</strong>
+                <small>{t("Business expense")}</small>
+              </span>
               <span className="finance-client">{spend.category}</span>
               <time className="record-date">{spend.date}</time>
               <strong className="record-amount outgoing">-{spend.amount}</strong>
             </article>
           ))}
-          {filteredSpends.length === 0 && <p className="empty-state">No expenses match those filters.</p>}
-        </section>
-        <p className="sample-note">Illustrative expense records. Connect your database to track your own spending.</p>
+          {filteredSpends.length === 0 && (
+            <EmptyState message={t("No expenses yet. Record your first operating cost.")} />
+          )}
+        </RecordsPanel>
+        <p className="sample-note">{t("Monitor operational costs and business expenses.")}</p>
       </div>
     </DashboardLayout>
   );
