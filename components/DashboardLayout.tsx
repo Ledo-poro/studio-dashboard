@@ -1,24 +1,41 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
-import Sidebar from "./Sidebar";
-import { ReactNode } from "react";
 import { useSession } from "@/lib/auth-client";
+import { usePreferences } from "./PreferencesProvider";
+import Sidebar from "./Sidebar";
 
-const routeTitles: Record<string, string> = {
-  "/dashboard": "Overview",
-  "/projects": "Projects",
-  "/clients": "Clients",
-  "/spends": "Spending",
-  "/revenue": "Revenue",
-  "/settings": "Settings",
-};
+function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const { theme, language, t } = usePreferences();
+  const routeTitle = ({ "/dashboard": "Overview", "/projects": "Projects", "/clients": "Clients", "/spends": "Spending", "/revenue": "Revenue", "/settings": "Settings" })[pathname] || "Overview";
+
+  return (
+    <div className="app-shell" data-theme={theme} dir={language === "ar" ? "rtl" : "ltr"}>
+      <Sidebar />
+      <div className="app-main">
+        <header className="app-topbar">
+          <Link className="app-mobile-brand" href="/dashboard">
+            <span className="studio-brand-mark"><Sparkles size={15} /></span> Studio
+          </Link>
+          <div className="app-breadcrumb">
+            <span>{t("WORKSPACE")}</span>
+            <b>/</b>
+            {t(routeTitle)}
+          </div>
+        </header>
+        <main className="workspace-main">
+          <div className="workspace-content">{children}</div>
+        </main>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const router = useRouter();
   const { data: session, isPending } = useSession();
 
@@ -28,17 +45,5 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   if (isPending || !session) return null;
 
-  return (
-    <div className="app-shell">
-      <Sidebar />
-      <div className="app-main">
-        <header className="app-topbar">
-          <Link className="app-mobile-brand" href="/dashboard"><span className="studio-brand-mark"><Sparkles size={15} /></span> Studio</Link>
-          <div className="app-breadcrumb"><span>WORKSPACE</span><b>/</b>{routeTitles[pathname] || "Overview"}</div>
-          <span className="sample-badge"><i /> Demo data</span>
-        </header>
-        <main className="workspace-main"><div className="workspace-content">{children}</div></main>
-      </div>
-    </div>
-  );
+  return <AuthenticatedWorkspace>{children}</AuthenticatedWorkspace>;
 }

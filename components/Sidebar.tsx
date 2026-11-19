@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChartNoAxesCombined, FolderKanban, LayoutDashboard, LogOut, ReceiptText, Settings2, Sparkles, UsersRound } from "lucide-react";
 import { signOut, useSession } from "@/lib/auth-client";
+import { usePreferences } from "./PreferencesProvider";
 
 const navItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -19,6 +20,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { t } = usePreferences();
   const [signingOut, setSigningOut] = useState(false);
   const userName = session?.user?.name || "Your workspace";
   const userEmail = session?.user?.email || "Account details unavailable";
@@ -46,8 +48,13 @@ export default function Sidebar() {
           {navItems.map(({ name, href, icon: Icon }) => {
             const isActive = pathname === href;
             return (
-              <Link key={href} href={href} className={`app-nav-link${isActive ? " is-active" : ""}`} aria-current={isActive ? "page" : undefined}>
-                <Icon size={17} strokeWidth={1.8} /> <span>{name}</span>
+              <Link
+                key={href}
+                href={href}
+                className={`app-nav-link${isActive ? " is-active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon size={17} strokeWidth={1.8} /> <span>{t(name)}</span>
               </Link>
             );
           })}
@@ -55,10 +62,13 @@ export default function Sidebar() {
         <div className="app-sidebar-bottom">
           <div className="app-account">
             <span className="app-account-avatar">{userName.slice(0, 1).toUpperCase()}</span>
-            <span className="app-account-copy"><strong>{userName}</strong><small>{userEmail}</small></span>
+            <span className="app-account-copy">
+              <strong>{userName}</strong>
+              <small>{userEmail}</small>
+            </span>
           </div>
           <button className="app-logout" type="button" onClick={handleLogout} disabled={signingOut}>
-            <LogOut size={16} /> {signingOut ? "Signing out..." : "Sign out"}
+            <LogOut size={16} /> {signingOut ? t("Signing out...") : t("Sign out")}
           </button>
         </div>
       </aside>
@@ -66,8 +76,13 @@ export default function Sidebar() {
         {navItems.map(({ name, href, icon: Icon }) => {
           const isActive = pathname === href;
           return (
-            <Link key={href} href={href} className={`mobile-nav-link${isActive ? " is-active" : ""}`} aria-current={isActive ? "page" : undefined}>
-              <Icon size={18} strokeWidth={1.8} /> <span>{name === "Spending" ? "Spends" : name}</span>
+            <Link
+              key={href}
+              href={href}
+              className={`mobile-nav-link${isActive ? " is-active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <Icon size={18} strokeWidth={1.8} /> <span>{t(name === "Spending" ? "Spends" : name)}</span>
             </Link>
           );
         })}

@@ -1,48 +1,81 @@
 "use client";
 
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Search, UsersRound } from "lucide-react";
+import RecordToolbar from "@/components/records/RecordToolbar";
+import RecordsPanel from "@/components/records/RecordsPanel";
+import EmptyState from "@/components/records/EmptyState";
+import { usePreferences } from "@/components/PreferencesProvider";
+import { useRecordFilter } from "@/lib/hooks/useRecordFilter";
+import type { Client } from "@/lib/types/records";
+import { UsersRound } from "lucide-react";
 
 export default function ClientsPage() {
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All clients");
-  const clients = [
-    { name: "Northstar Studio", email: "hello@northstar.studio", company: "Northstar", value: "$12,500", status: "Active" },
-    { name: "Fieldnotes Co.", email: "team@fieldnotes.co", company: "Fieldnotes", value: "$8,900", status: "Active" },
-    { name: "Forma Works", email: "studio@formaworks.com", company: "Forma", value: "$15,200", status: "Active" },
-    { name: "Aperture Systems", email: "ops@aperture.io", company: "Aperture", value: "$5,400", status: "Inactive" },
-  ];
-  const filteredClients = clients.filter((client) => {
-    const matchesQuery = `${client.name} ${client.email} ${client.company}`.toLowerCase().includes(query.toLowerCase());
-    const matchesStatus = statusFilter === "All clients" || client.status === statusFilter;
-    return matchesQuery && matchesStatus;
+  const { t } = usePreferences();
+  const clients: Client[] = [];
+
+  const { query, setQuery, filter, setFilter, filteredData: filteredClients } = useRecordFilter({
+    data: clients,
+    searchFields: (client) => `${client.name} ${client.email} ${client.company}`,
+    filterField: (client) => client.status,
+    filterValue: "All clients",
   });
 
   return (
     <DashboardLayout>
       <div className="workspace-page">
-        <div className="page-heading"><div><p className="page-eyebrow">PEOPLE YOU WORK WITH</p><h1>Clients</h1><p>Keep relationships and account details close at hand.</p></div></div>
-        <div className="records-toolbar">
-          <label className="search-control"><Search size={16} /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search clients or email" aria-label="Search clients or email" /></label>
-          <select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter clients by status">
-            <option>All clients</option><option>Active</option><option>Inactive</option>
-          </select>
-          <span className="record-count">{filteredClients.length} clients</span>
+        <div className="page-heading">
+          <div>
+            <p className="page-eyebrow">{t("PEOPLE YOU WORK WITH")}</p>
+            <h1>{t("Clients")}</h1>
+            <p>{t("Keep relationships and account details close at hand.")}</p>
+          </div>
         </div>
-        <section className="records-panel" aria-label="Client directory">
-          <div className="records-columns client-columns"><span>CLIENT</span><span>COMPANY</span><span>STATUS</span><span>CONTRACT VALUE</span></div>
+
+        <RecordToolbar
+          query={query}
+          onQueryChange={setQuery}
+          filterValue={filter}
+          onFilterChange={setFilter}
+          filterOptions={[
+            { value: "All clients", label: t("All clients") },
+            { value: "Active", label: t("Active") },
+            { value: "Inactive", label: t("Inactive") },
+          ]}
+          recordCount={filteredClients.length}
+          recordType="clients"
+          searchPlaceholder={t("Search clients or email")}
+          filterLabel={t("Filter clients by status")}
+        />
+
+        <RecordsPanel
+          columns={[
+            { key: "client", label: t("CLIENT") },
+            { key: "company", label: t("COMPANY") },
+            { key: "status", label: t("STATUS") },
+            { key: "value", label: t("CONTRACT VALUE") },
+          ]}
+          columnClassName="client-columns"
+          ariaLabel="Client directory"
+        >
           {filteredClients.map((client) => (
             <article className="record-row client-row" key={client.email}>
-              <div className="record-primary"><span className="record-icon client-icon">{client.name.slice(0, 1)}</span><span><strong>{client.name}</strong><small>{client.email}</small></span></div>
+              <div className="record-primary">
+                <span className="record-icon client-icon">{client.name.slice(0, 1)}</span>
+                <span>
+                  <strong>{client.name}</strong>
+                  <small>{client.email}</small>
+                </span>
+              </div>
               <span className="record-company">{client.company}</span>
               <span className={`status-label ${client.status.toLowerCase()}`}>{client.status}</span>
               <strong className="record-amount">{client.value}</strong>
             </article>
           ))}
-          {filteredClients.length === 0 && <p className="empty-state">No clients match those filters.</p>}
-        </section>
-        <p className="sample-note">Illustrative client records. Connect your database to manage your own contacts.</p>
+          {filteredClients.length === 0 && (
+            <EmptyState message={t("No clients yet. Add your first client to get started.")} />
+          )}
+        </RecordsPanel>
+        <p className="sample-note">{t("Keep track of your client relationships and account details.")}</p>
       </div>
     </DashboardLayout>
   );
